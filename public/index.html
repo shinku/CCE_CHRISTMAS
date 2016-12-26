@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=750, user-scalable=no">
+    <title>圣诞快乐!</title>
+    <script src="js/utils.js"></script>
+    <script src="js/socket.io.js"></script>
+
+    <style>
+        *{
+            margin: 0 0;
+        }
+        body{
+            background: #f4c9af;
+        }
+        .content{
+            background: url("imgs/mobileBg.jpg");
+            width: 750px;
+            height: 1080px;
+
+        }
+        .page{
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            overflow: hidden;
+            top: 0px;
+        }
+        .form{
+            background: url("imgs/input1.png");
+            width: 563px;
+            height: 284px;
+            margin: 500px auto;
+            position: relative;
+        }
+        .formbtn{
+            background: url("imgs/btn1.png");
+            width: 464px;
+            height: 67px;
+            position: absolute;
+            top: 200px;
+            left: 50px;;
+        }
+        #emailinput{
+            position: absolute;
+            top: 72px;
+            left: 50px;;
+            font-size: 30px;
+            background: url("imgs/tran.png");
+            border-width: 0px;
+        }
+        .dialogs{
+            width: 100%;
+            height: auto;
+            position: absolute;
+            bottom: 90px;
+        }
+        .dialog{
+            background: #fff;
+            border-radius: 20px;
+            width: auto;
+            max-width: 500px;
+            height: auto;
+            min-height: 59px;
+            margin-left: 30px;
+            clear: both;
+            overflow: auto;
+            margin-bottom: 20px;
+        }
+        .icon{
+            background: url("imgs/icons.png");
+            width: 59px;
+            height: 59px;
+        }
+        .dialog div{
+            float: left;
+        }
+        .dialog .txt{
+            font-size: 40px;
+            height: auto;
+            width: auto;
+            max-width:420px;
+            word-break:break-all;
+            padding-top: 5px;
+            padding-bottom: 5px;
+        }
+        .saybtn{
+            position: fixed;
+            bottom: 10px;
+            background: url("imgs/saybtn.png");
+            width: 685px;
+            height: 61px;
+            left: 30px;
+        }
+        .sayform{
+            width: 548px;
+            height: 100%;
+            overflow: hidden;
+            border-radius: 20px;
+        }
+        .saybtn div{
+            float: left;
+        }
+        #sayformtxt{
+            width: 95%;
+            min-height: 61px;
+            overflow: auto;
+            word-break:break-all;
+            background: url("imgs/tran.png");
+            color: #FFF;
+            font-size: 30px;
+            border-width: 0px;
+        }
+        .submitsay{
+            width: 128px;
+            height: 100%;
+            background: url("imgs/tran.png");
+            margin-right: 0px;
+        }
+        .dialog_self{
+            margin-right: 30px;
+            float: right;
+        }
+        .icon1{
+            background-position-y: -66px;
+        }
+        .icon2{
+            background-position-y: -132px;
+        }
+        .icon3{
+            background-position-y: -198px;
+        }
+
+    </style>
+</head>
+<body >
+    <div class="content">
+       <div class="page log" id="log" style="display: block">
+           <div class="form">
+                <input type="text" id="emailinput" style="width: 464px; height: 67px" placeholder="输入公司邮箱"  value="">
+                <div class="formbtn" onclick="baodao()"></div>
+           </div>
+       </div>
+        <div class="page chat" id="chat" style="display: none">
+            <div class="dialogs" id="mydialog">
+            </div>
+            <div class="saybtn">
+                <div class="sayform">
+                    <input id="sayformtxt">
+                </div>
+                <div class="submitsay" onclick="chat()"></div>
+            </div>
+        </div>
+    </div>
+    <!--<input type="button" value="我来楽" onclick="baodao()"/>
+    <input type="button" value="chat" onclick="chat()" id="chat" style="display: none"/>
+    <div style="width: 100%; height: 100%" id="debug" value="123"></div>-->
+</body>
+<script >
+    var isOk=false;
+    var email;
+    var str="";
+    //var socket=io.connect('ccemx.chinacloudsites.cn');
+    var socket=io();
+    socket.on('connect',function(o){
+        console.log(o);
+        alert("祝大家圣诞快乐");
+        if(email)
+        {
+            baodao();
+        }
+    });
+    socket.on('illegal',function(){
+        alert('你现在还不能参加活动，请核对你的参与场次');
+    })
+    socket.on('ok',function(){
+        alert('欢迎来到圣诞活动，在这里畅所欲言吧！');
+        document.getElementById('log').style['display']='none';
+        document.getElementById('chat').style['display']='block';
+    });
+    socket.on('withchat',function(data){
+        if(data.email==email)
+        {
+            document.getElementById('mydialog').appendChild(dialog_right(data.content));
+        }
+        else{
+            document.getElementById('mydialog').appendChild(dialog_left(data.content));
+        }
+        //document.getElementById('debug').innerHTML=str;
+    });
+
+    function baodao(){
+        //{'email':''}
+        email=document.getElementById('emailinput').value;
+        console.log(socket);
+        socket.emit('baomin',{"email":email});
+    }
+    function chat()
+    {
+        var txt=document.getElementById('sayformtxt').value;
+        if(txt=='')
+        {
+            return;
+        };
+        document.getElementById('sayformtxt').value='';
+        socket.emit('chat',{"email":email,'content':txt});
+    }
+    function debug(str)
+    {
+        document.getElementById('debug').innerHTML=str;
+    }
+</script>
+</html>

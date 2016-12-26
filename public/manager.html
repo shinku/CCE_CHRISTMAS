@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>manager</title>
+    <script src="js/utils.js"></script>
+    <script src="js/socket.io.js"></script>
+    <script src="js/tweenMax.js"></script>
+    <style>
+         html{
+             width: 100%;
+             height: 100%;
+         }
+        *{
+            margin: 0 0;
+        }
+        body{
+            background: #f4c9af;
+            width: 100%;
+            height: 100%;
+        }
+        .content{
+            background: url("imgs/managerbg.jpg") no-repeat;
+            width: 1200px;
+            height: 675px;
+            overflow:hidden;
+            margin: 0 auto;
+            position: relative;
+        }
+         .dialog{
+             background: #fff;
+             border-radius: 20px;
+             width: auto;
+             max-width: 500px;
+             height: 59px;
+             margin-left: 30px;
+             overflow: hidden;
+             margin-bottom: 20px;
+             position: absolute;
+         }
+         .icon{
+             background: url("imgs/icons.png");
+             width: 59px;
+             height: 59px;
+         }
+         .dialog div{
+             float: left;
+         }
+         .dialog .txt{
+             font-family: Arial;
+             font-size: 35px;
+             height: auto;
+             width: auto;
+             max-width:420px;
+             overflow: hidden;
+             white-space:nowrap;
+             /*word-break:break-all;*/
+             padding-top: 5px;
+             padding-bottom: 5px;
+         }
+        .playbtn{
+            background: url("imgs/btns.png") no-repeat;
+            height: 76px;
+            width: 76px;
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+        }
+        .plays{
+            background-position-x: -76px;
+        }
+        .pauses{
+            background-position-x: 0px;
+        }
+        .dialogs{
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+         .icon1{
+             background-position-y: -66px;
+         }
+         .icon2{
+             background-position-y: -132px;
+         }
+         .icon3{
+             background-position-y: -198px;
+         }
+        .front{
+            width: 100%;
+            height: 100%;
+            background: url("imgs/wb.png");
+            position: absolute;
+            top: 0px;
+            display: none;
+
+        }
+        .title{
+            background:url("imgs/title.png");
+            width: 717px;
+            height: 390px;
+            margin: 100px auto;;
+        }
+        .namet{
+            width: 717px;
+            height: 390px;
+            margin: -200px auto;;
+            text-align: center;
+            font-size: 30px;
+        }
+    </style>
+</head>
+<body>
+<div class="content">
+    <div class="dialogs" id="dialogs"></div>
+    <div class="front" id="font"><div class="title"></div><div class="namet" id="namet">1231232</div></div>
+    <div class="playbtn plays" onclick="clickplay()" id="plll"></div>
+</div>
+</body>
+<script >
+    var str="";
+    var socket=io();
+    var dialogs=[];
+    var flys=[];
+    var interval;
+    var startindex=10;
+    var stageFlys=[];
+    var anistate=false;
+    var winers={};
+    var tempwin;
+    var fake=null;
+    socket.on('connect',function(o){
+        console.log("mnanager");
+        socket.emit('baomin',{"email":'CCEMANAGER'});
+    });
+    socket.on('getHistory',function(data){
+        console.log(data);
+        dialogs=data.history;
+        winers=data.winners;
+        dialogs.sort(function(a,b){var a=Math.random();if(a>5){return 1};return -1});//打乱顺序
+        var len=Math.min(startindex,dialogs.length);
+
+        var str="";
+
+        for(var i=0;i<dialogs.length;i++)
+        {
+            str+=dialogs[i].email+" says "+dialogs[i].content;
+            str+="\n";
+        }
+        console.log(str);
+        for(var i=0;i<len;i++)
+        {
+            var fl=new flaying(dialogs[i]['email'],dialogs[i]['content']);
+            flys.push(fl);
+            if( winers[dialogs[i].email]==1)
+            {
+                fl.sety(620);
+                console.log(dialogs[i].email +"  is one of winners");
+            }
+            else {
+                fl.sety(Math.random()*500);
+            }
+            //fl.sety(Math.random()*500);
+            fl.setx(Math.random()*1500+900);
+        }
+    });
+    socket.on('wearechatting',function(data){
+        console.log(data);
+        //document.getElementById('debug').innerHTML=str;
+        var fl=new flaying(data.email,data.content);
+        if(winers[data.email]==1)
+        {
+            fl.sety(620);
+            console.log(data.email +"  is one of winners");
+        }
+        else {
+            fl.sety(Math.random()*500);
+        }
+        flys.push(fl);
+        fl.setx(Math.random()*100+900);
+    });
+    socket.on('out',function(data){
+        document.getElementById('debug').innerHTML=data.msg;
+    });
+    socket.on('noWin',function(data){
+        alert('这批人里面没人中奖,请再试一批');
+        anistate=false;
+        changeState();
+    });
+    socket.on('getWin',function(data)
+    {
+        console.log(data);
+        //if(data.arrindex)
+        //{
+            var winindex=data.arrindex;
+            //stageFlys[winindex].showWin();
+            var arr=stageFlys;
+            TweenMax.to(stageFlys[winindex].dom,.5,{scale:2,left:500,top:260});
+            tempwin=stageFlys[winindex];
+            document.getElementById('font').style.display='block';
+            document.getElementById('namet').innerHTML=stageFlys[winindex].email;
+            stageFlys[winindex].dom.style['z-index']=100;
+            winers[stageFlys[winindex].email]=1;
+           // var tt=new TimelineMax();
+
+            /*for(var i=0;i<stageFlys.length;i++)
+            {
+                if(i<stageFlys.length-1)
+                {
+
+                    tt.add(TweenMax.to(stageFlys[i].dom,.5,{bezier:[{scale:1.5},{scale:0.9}]},"-=0.3"));
+                }
+                else {
+
+                    tt.add(TweenMax.to(stageFlys[i].dom,.5,{bezier:[{scale:1.5},{scale:0.9}],onComplete:function(){
+                        //stageFlys[winindex].setx(500);
+                        //stageFlys[winindex].sety(260);
+                        TweenMax.to(stageFlys[winindex].dom,.5,{scale:2,left:500,top:260});
+                        tempwin=stageFlys[winindex];
+                        document.getElementById('font').style.display='block';
+                        document.getElementById('namet').innerHTML=stageFlys[winindex].email;
+                        stageFlys[winindex].dom.style['z-index']=100;
+                        winers[stageFlys[winindex].email]=1;
+
+                    }},"-=0.3"));
+                }
+
+            }*/
+
+
+        /*
+        *  TweenMax.to(stageFlys[winindex].dom,.5,{scale:2,left:500,top:260});
+         tempwin=stageFlys[winindex];
+         document.getElementById('font').style.display='block';
+         document.getElementById('namet').innerHTML=stageFlys[winindex].email;
+         stageFlys[winindex].dom.style['z-index']=100;
+         winers[stageFlys[winindex].email]=1;*/
+    });
+    function changeState(){
+
+        switch(anistate)
+        {
+            case true:
+                    document.getElementById('plll').style['background-position-x']='-76px';
+                break;
+            case false:
+                    document.getElementById('plll').style['background-position-x']='0px';
+                break;
+        }
+
+    }
+    function lottery()
+    {
+        var sendarr=[];
+        var tempoo={};
+        for(var i=0;i<stageFlys.length;i++)
+        {
+            var em=stageFlys[i].email;
+            /*if(tempoo[em])
+            {
+                continue;
+            }*/
+            sendarr.push({email:stageFlys[i].email,content:stageFlys[i].content});
+            //if(stageFlys[i])
+        }
+        socket.emit('lottery',sendarr);
+    }
+    function flaying(email,str)
+    {
+        this.x=0;
+        this.y=0;
+        var self=this;
+        this.content=str;
+        this.setx=function(v){
+            self.x=v;
+            this.dom.style.left=self.x+"px";
+        }
+        this.sety=function(v){
+            self.y=v;
+            this.dom.style.top=self.y+"px";
+        }
+        this.offsetX=function(v)
+        {
+            self.x+=v;
+            this.dom.style.left=self.x+"px";
+        };
+        this.offsety=function(v)
+        {
+            self.y+=v;
+            this.dom.style.top=self.y+"px";
+        }
+        this.changeDialog=function(email,content){
+            self.email=email;
+            self.content=content;
+            self.ddd.changeData(content);
+        };
+        this.showWin=function(){
+            TweenMax.to(self.dom,.5,{scale:1.2,repeat:-1});
+        }
+        this.ddd=new dialog(str);
+        this.dom=self.ddd.div;
+        this.email=email;
+        document.getElementById('dialogs').appendChild(self.dom);
+    }
+    function dialog(str)
+    {
+        var self=this;
+        this.div=document.createElement('div');
+        this.div.setAttribute('class','dialog');
+        this.divicon=document.createElement('div');
+        var dd=parseInt(Math.random()*3);
+        console.log(dd);
+        var classnames=['icon icon','icon icon1','icon icon2','icon icon3'];
+        var clasname=classnames[dd]
+        this.divicon.setAttribute('class',clasname);
+        this.divtxt=document.createElement('div');
+        this.divtxt.setAttribute('class','txt');
+        this.divtxt.innerHTML=str;
+        this.div.appendChild(this.divicon);
+        this.div.appendChild(this.divtxt);
+        this.changeData=function(content){
+            self.divtxt.innerHTML=content;
+            var classnames=['icon icon','icon icon1','icon icon2','icon icon3'];
+            var dd=parseInt(Math.random()*3);
+            var clasname=classnames[dd]
+            self.divicon.setAttribute('class',clasname);
+        };
+       // return div;
+    };
+    function clickplay()
+    {
+        //
+        console.log(anistate);
+        if(tempwin)
+        {
+            document.getElementById('font').style.display='none';
+            TweenMax.to(tempwin.dom,.5,{left:1200,left:0,scale:1,onComplete:function(){
+                setNew(tempwin);
+                tempwin=null;
+            }});
+            //tempwin=null;
+        }
+        switch(anistate)
+        {
+            case true:
+                anistate=false;
+                changeState();
+                break;
+            case false:
+                anistate=true;
+                changeState();
+                lottery();
+                break;
+        }
+
+       // anistate=1;
+
+    };
+    function setNew(fy)
+    {
+        fy.x=1250+Math.random()*200;
+        startindex++;
+        if(startindex>=dialogs.length)
+        {
+            startindex=0;
+        };
+        //console.log(startindex);
+        if( winers[dialogs[startindex].email]==1)
+        {
+            fy.sety(620);
+        }
+        else {
+            fy.sety(Math.random()*500);
+        }
+
+
+        if(dialogs.length>0)
+        {
+            fy.changeDialog(dialogs[startindex].email,dialogs[startindex].content);
+        }
+    }
+    interval=setInterval(function(){
+        if(anistate=='1') return;
+        stageFlys=[];
+        for(var i=0;i<flys.length;i++)
+        {
+
+            if(flys[i]==tempwin){
+                continue;
+            }
+            if(flys[i].x>0 && flys[i].x<=1000 && flys[i].y<500)
+            {
+                stageFlys.push(flys[i]);
+            }
+            flys[i].offsetX(-2);
+            if(flys[i].x<-500)
+            {
+                if(flys[i].email.toLocaleLowerCase()=='cici.liu@ccegroup.cn' && fake==null)
+                {
+                    fake=flys[i];
+                    flys[i].setx(1000);
+                    if( winers[flys[i]['email']]==1)
+                    {
+                        flys[i].sety(620);
+                    }
+                    else {
+                        flys[i].sety(Math.random()*500);
+                    }
+                }
+                else if(flys[i]==fake)
+                {
+                    flys[i].setx(1000);
+                    if( winers[flys[i]['email']]==1)
+                    {
+                        flys[i].sety(620);
+                    }
+                    else{
+                        flys[i].sety(Math.random()*500);
+                    }
+
+                }
+                else {
+                    setNew(flys[i]);
+                }
+            }
+        }
+    },10)
+
+</script>
+</html>
